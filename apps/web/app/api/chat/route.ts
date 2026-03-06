@@ -2,7 +2,12 @@ import { NextRequest } from "next/server";
 import { getRouter } from "@/lib/router-instance";
 import { initDb } from "@/lib/db";
 import { logQuery } from "@llm-router/db";
-import { calculateCost, type ChatMessage } from "@llm-router/core";
+import {
+  calculateCost,
+  validateInput,
+  validateOutput,
+  type ChatMessage,
+} from "@llm-router/core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +22,24 @@ export async function POST(request: NextRequest) {
 
     if (!message?.trim()) {
       return Response.json({ error: "Message is required" }, { status: 400 });
+    }
+
+    // Run input guardrails
+    const inputCheck = validateInput(message);
+    if (!inputCheck.passed) {
+      const blocked = inputCheck.violations.filter((v) => v.severity === "block");
+      return Response.json(
+        {
+          error: "Message blocked by guardrails",
+          guardrail: {
+            violations: blocked.map((v) => ({
+              rule: v.rule,
+              message: v.message,
+            })),
+          },
+        },
+        { status: 422 }
+      );
     }
 
     // Initialize DB
@@ -71,9 +94,41 @@ export async function POST(request: NextRequest) {
           const totalLatency = Date.now() - startTime;
           const cost = calculateCost(decision.model, tokensIn, tokensOut);
 
+          // Run output guardrails
+          const outputCheck = validateOutput(fullResponse);
+          const guardrailWarnings = [
+            ...inputCheck.violations.filter((v) => v.severity === "warn"),
+            ...outputCheck.violations,
+          ];
+
+          if (outputCheck.sanitized && outputCheck.sanitized !== fullResponse) {
+            fullResponse = outputCheck.sanitized;
+          }
+
+          if (!outputCheck.passed) {
+            fullResponse = "I'm unable to provide that response as it was flagged by safety guardrails.";
+          }
+
+          // Send guardrail metadata if any warnings
+          if (guardrailWarnings.length > 0) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "guardrail",
+                  warnings: guardrailWarnings.map((v) => ({
+                    rule: v.rule,
+                    severity: v.severity,
+                    message: v.message,
+                  })),
+                })}\n\n`
+              )
+            );
+          }
+
           // Log to DB
+          let queryId: number | undefined;
           try {
-            logQuery({
+            const result = logQuery({
               input: message,
               output: fullResponse,
               modelUsed: decision.model,
@@ -86,6 +141,7 @@ export async function POST(request: NextRequest) {
               confidence: decision.confidence,
               reason: decision.reason,
             });
+            queryId = Number(result.lastInsertRowid);
           } catch (dbError) {
             console.error("Failed to log query:", dbError);
           }
@@ -101,6 +157,7 @@ export async function POST(request: NextRequest) {
                   cost,
                   latencyMs: totalLatency,
                   routingLatencyMs: latencyToRoute,
+                  queryId,
                 },
               })}\n\n`
             )

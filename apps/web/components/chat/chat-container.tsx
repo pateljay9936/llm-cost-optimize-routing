@@ -6,6 +6,12 @@ import { ChatInput } from "./chat-input";
 import { StrategyToggle } from "./strategy-toggle";
 import type { ModelTier, ChatMessage as ChatMessageType } from "@llm-router/core";
 
+interface GuardrailWarningData {
+  rule: string;
+  severity: string;
+  message: string;
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -17,6 +23,8 @@ interface Message {
     latencyMs?: number;
     tokensIn?: number;
     tokensOut?: number;
+    queryId?: number;
+    guardrailWarnings?: GuardrailWarningData[];
   };
 }
 
@@ -82,8 +90,31 @@ export function ChatContainer() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Request failed");
+          const errorBody = await response.json();
+          if (errorBody.guardrail) {
+            const violations = errorBody.guardrail.violations || [];
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsg.id
+                  ? {
+                      ...m,
+                      content: "Your message was blocked by safety guardrails.",
+                      meta: {
+                        ...m.meta,
+                        guardrailWarnings: violations.map((v: { rule: string; message: string }) => ({
+                          rule: v.rule,
+                          severity: "block",
+                          message: v.message,
+                        })),
+                      },
+                    }
+                  : m
+              )
+            );
+            setIsStreaming(false);
+            return;
+          }
+          throw new Error(errorBody.error || "Request failed");
         }
 
         const reader = response.body?.getReader();
@@ -139,8 +170,26 @@ export function ChatContainer() {
                         latencyMs: data.meta.latencyMs,
                         tokensIn: data.meta.tokensIn,
                         tokensOut: data.meta.tokensOut,
+                        queryId: data.meta.queryId,
                       },
                     }
+                    : m
+                )
+              );
+            } else if (data.type === "guardrail") {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsg.id
+                    ? {
+                        ...m,
+                        meta: {
+                          ...m.meta,
+                          guardrailWarnings: [
+                            ...(m.meta?.guardrailWarnings || []),
+                            ...data.warnings,
+                          ],
+                        },
+                      }
                     : m
                 )
               );
@@ -227,6 +276,8 @@ export function ChatContainer() {
             role={msg.role}
             content={msg.content}
             meta={msg.meta}
+            guardrailWarnings={msg.meta?.guardrailWarnings}
+            isStreaming={isStreaming && msg.id === messages[messages.length - 1]?.id}
           />
         ))}
         {isStreaming && messages[messages.length - 1]?.content === "" && (

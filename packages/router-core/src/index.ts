@@ -23,3 +23,13 @@ export type {
   ModelPricing,
 } from "./types";
 export { MODEL_PRICING } from "./types";
+export { analyzeThresholds, type ThresholdConfig, type TierFeedback, type ThresholdAnalysis } from "./eval/threshold-tuner";
+export {
+  validateInput,
+  validateOutput,
+  DEFAULT_GUARDRAIL_CONFIG,
+  type GuardrailConfig,
+  type GuardrailResult,
+  type GuardrailViolation,
+  type GuardrailSeverity,
+} from "./guardrails";
