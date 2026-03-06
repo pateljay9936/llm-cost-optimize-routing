@@ -42,7 +42,7 @@ export class OllamaProvider implements LLMProvider {
       throw new Error(`Ollama error: ${response.status} ${await response.text()}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Record<string, any>;
     return {
       content: data.message?.content ?? "",
       tokensIn: data.prompt_eval_count ?? 0,

@@ -60,7 +60,7 @@ export class RouteLLMStrategy implements RouterStrategy {
       throw new Error(`RouteLLM error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Record<string, any>;
     const routedModel = data.model || "";
 
     // RouteLLM routes to either strong or weak model

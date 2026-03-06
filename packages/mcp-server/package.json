@@ -1,0 +1,26 @@
+{
+  "name": "@llm-router/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "bin": {
+    "llm-router-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "start": "npx tsx src/index.ts",
+    "dev": "npx tsx src/index.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@llm-router/core": "workspace:*",
+    "@llm-router/db": "workspace:*",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@llm-router/tsconfig": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}
