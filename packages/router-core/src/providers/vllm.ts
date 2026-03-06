@@ -40,7 +40,7 @@ export class VLLMProvider implements LLMProvider {
       throw new Error(`vLLM error: ${response.status} ${await response.text()}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Record<string, any>;
     const choice = data.choices?.[0];
     return {
       content: choice?.message?.content ?? "",
