@@ -72,8 +72,9 @@ export async function POST(request: NextRequest) {
           const cost = calculateCost(decision.model, tokensIn, tokensOut);
 
           // Log to DB
+          let queryId: number | undefined;
           try {
-            logQuery({
+            const result = logQuery({
               input: message,
               output: fullResponse,
               modelUsed: decision.model,
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
               confidence: decision.confidence,
               reason: decision.reason,
             });
+            queryId = Number(result.lastInsertRowid);
           } catch (dbError) {
             console.error("Failed to log query:", dbError);
           }
@@ -101,6 +103,7 @@ export async function POST(request: NextRequest) {
                   cost,
                   latencyMs: totalLatency,
                   routingLatencyMs: latencyToRoute,
+                  queryId,
                 },
               })}\n\n`
             )

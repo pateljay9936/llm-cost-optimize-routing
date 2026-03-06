@@ -3,11 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { StatsCards } from "./stats-cards";
+import { EvalCards } from "./eval-cards";
 import { QueryLog } from "./query-log";
 import { Button } from "@llm-router/ui";
 
 const RoutingChart = dynamic(() => import("./routing-chart").then((m) => m.RoutingChart), { ssr: false });
 const LatencyChart = dynamic(() => import("./latency-chart").then((m) => m.LatencyChart), { ssr: false });
+const SatisfactionByTierChart = dynamic(() => import("./eval-charts").then((m) => m.SatisfactionByTierChart), { ssr: false });
+const MisrouteTrendChart = dynamic(() => import("./eval-charts").then((m) => m.MisrouteTrendChart), { ssr: false });
 
 type TimeRange = "today" | "7d" | "30d" | "all";
 
@@ -61,17 +64,51 @@ const defaultSummary = {
   avgLatency: 0,
 };
 
+interface FeedbackData {
+  stats: {
+    total: number;
+    thumbsUp: number;
+    thumbsDown: number;
+    satisfactionRate: number;
+    perTier: Array<{
+      tier: string;
+      total: number;
+      thumbsUp: number;
+      thumbsDown: number;
+    }>;
+  };
+  trend: Array<{
+    date: string;
+    total: number;
+    thumbsUp: number;
+    thumbsDown: number;
+    satisfactionRate: number;
+  }>;
+  misroutes: Array<{
+    tier: string;
+    count: number;
+  }>;
+}
+
 export function DashboardContainer() {
   const [range, setRange] = useState<TimeRange>("7d");
   const [data, setData] = useState<DashboardData | null>(null);
+  const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/stats?range=${range}`);
-      const json = await res.json();
+      const [statsRes, feedbackRes] = await Promise.all([
+        fetch(`/api/stats?range=${range}`),
+        fetch(`/api/feedback?range=${range}`),
+      ]);
+      const json = await statsRes.json();
       setData(json);
+      if (feedbackRes.ok) {
+        const fbJson = await feedbackRes.json();
+        setFeedbackData(fbJson);
+      }
     } catch {
       setData(null);
     } finally {
@@ -141,6 +178,21 @@ export function DashboardContainer() {
             <RoutingChart summary={summary} />
             <LatencyChart dailyBreakdown={data?.dailyBreakdown ?? []} />
           </div>
+
+          {/* Eval Feedback Section */}
+          {feedbackData && feedbackData.stats.total > 0 && (
+            <>
+              <div className="mt-4">
+                <h2 className="text-lg font-semibold mb-3">Response Quality</h2>
+                <EvalCards stats={feedbackData.stats} />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <SatisfactionByTierChart perTier={feedbackData.stats.perTier} />
+                <MisrouteTrendChart trend={feedbackData.trend} />
+              </div>
+            </>
+          )}
 
           <QueryLog queries={data?.recentQueries ?? []} />
         </>

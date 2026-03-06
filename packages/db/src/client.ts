@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { sql } from "drizzle-orm";
 import * as schema from "./schema";
+import * as feedbackSchema from "./feedback-schema";
 
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
@@ -13,7 +14,7 @@ export function getDb(dbPath?: string) {
   const sqlite = new Database(path);
   sqlite.pragma("journal_mode = WAL");
 
-  db = drizzle(sqlite, { schema });
+  db = drizzle(sqlite, { schema: { ...schema, ...feedbackSchema } });
 
   // Auto-create tables
   sqlite.exec(`
@@ -30,6 +31,13 @@ export function getDb(dbPath?: string) {
       strategy_used TEXT NOT NULL DEFAULT 'heuristic',
       confidence REAL NOT NULL DEFAULT 0,
       reason TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      query_id INTEGER NOT NULL REFERENCES queries(id),
+      rating TEXT NOT NULL CHECK(rating IN ('up', 'down')),
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 

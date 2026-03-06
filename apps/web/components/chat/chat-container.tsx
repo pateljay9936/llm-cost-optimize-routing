@@ -17,6 +17,7 @@ interface Message {
     latencyMs?: number;
     tokensIn?: number;
     tokensOut?: number;
+    queryId?: number;
   };
 }
 
@@ -139,6 +140,7 @@ export function ChatContainer() {
                         latencyMs: data.meta.latencyMs,
                         tokensIn: data.meta.tokensIn,
                         tokensOut: data.meta.tokensOut,
+                        queryId: data.meta.queryId,
                       },
                     }
                     : m
@@ -227,6 +229,7 @@ export function ChatContainer() {
             role={msg.role}
             content={msg.content}
             meta={msg.meta}
+            isStreaming={isStreaming && msg.id === messages[messages.length - 1]?.id}
           />
         ))}
         {isStreaming && messages[messages.length - 1]?.content === "" && (

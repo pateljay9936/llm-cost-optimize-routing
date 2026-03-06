@@ -2,10 +2,12 @@
 
 import { Badge } from "@llm-router/ui";
 import type { ModelTier } from "@llm-router/core";
+import { FeedbackButtons } from "./feedback-buttons";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  isStreaming?: boolean;
   meta?: {
     model?: string;
     tier?: ModelTier;
@@ -13,6 +15,7 @@ interface ChatMessageProps {
     latencyMs?: number;
     tokensIn?: number;
     tokensOut?: number;
+    queryId?: number;
   };
 }
 
@@ -28,8 +31,10 @@ const tierLabels: Record<ModelTier, string> = {
   complex: "GPT-4o",
 };
 
-export function ChatMessage({ role, content, meta }: ChatMessageProps) {
+export function ChatMessage({ role, content, meta, isStreaming }: ChatMessageProps) {
   const isUser = role === "user";
+  const showFeedback =
+    !isUser && !isStreaming && meta?.queryId !== undefined;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -53,6 +58,9 @@ export function ChatMessage({ role, content, meta }: ChatMessageProps) {
               <span>{meta.latencyMs}ms</span>
             )}
           </div>
+        )}
+        {showFeedback && (
+          <FeedbackButtons queryId={meta.queryId!} />
         )}
       </div>
     </div>
