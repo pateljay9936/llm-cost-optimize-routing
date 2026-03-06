@@ -1,0 +1,60 @@
+"use client";
+
+import { Badge } from "@llm-router/ui";
+import type { ModelTier } from "@llm-router/core";
+
+interface ChatMessageProps {
+  role: "user" | "assistant";
+  content: string;
+  meta?: {
+    model?: string;
+    tier?: ModelTier;
+    cost?: number;
+    latencyMs?: number;
+    tokensIn?: number;
+    tokensOut?: number;
+  };
+}
+
+const tierColors: Record<ModelTier, "success" | "warning" | "info"> = {
+  simple: "success",
+  medium: "warning",
+  complex: "info",
+};
+
+const tierLabels: Record<ModelTier, string> = {
+  simple: "Local",
+  medium: "GPT-4o mini",
+  complex: "GPT-4o",
+};
+
+export function ChatMessage({ role, content, meta }: ChatMessageProps) {
+  const isUser = role === "user";
+
+  return (
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
+      <div
+        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+          isUser
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-secondary-foreground"
+        }`}
+      >
+        <div className="whitespace-pre-wrap text-sm">{content}</div>
+        {meta?.tier && (
+          <div className="mt-2 flex items-center gap-2 text-xs opacity-70">
+            <Badge variant={tierColors[meta.tier]} className="text-[10px] px-1.5 py-0">
+              {tierLabels[meta.tier]}
+            </Badge>
+            {meta.cost !== undefined && (
+              <span>${meta.cost.toFixed(6)}</span>
+            )}
+            {meta.latencyMs !== undefined && (
+              <span>{meta.latencyMs}ms</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
