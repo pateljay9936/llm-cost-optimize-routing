@@ -55,3 +55,8 @@ export function getDb(dbPath?: string) {
 
   return db;
 }
+
+/** Reset the cached DB instance (for testing only) */
+export function resetDb() {
+  db = null;
+}

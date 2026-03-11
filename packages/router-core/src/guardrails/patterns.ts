@@ -38,6 +38,10 @@ export const INJECTION_PATTERNS = [
     label: "role hijacking",
   },
   {
+    regex: /(assume|act|behave|pretend|imagine)\s+(that\s+|as\s+)?(if\s+)?(you('re|\s+are)\s+)/i,
+    label: "role hijacking",
+  },
+  {
     regex: /disregard\s+(your|all|any)\s+(rules|instructions|guidelines|constraints)/i,
     label: "rule disregard",
   },

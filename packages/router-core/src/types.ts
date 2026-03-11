@@ -1,6 +1,6 @@
 export type ModelTier = "simple" | "medium" | "complex";
 
-export type RouterStrategyName = "heuristic" | "semantic" | "routellm";
+export type RouterStrategyName = "heuristic" | "semantic" | "routellm" | "llm-judge";
 
 export interface Query {
   message: string;
@@ -18,6 +18,8 @@ export interface RoutingDecision {
   provider: string;
   confidence: number;
   reason: string;
+  /** If the classifier already produced a response (e.g. LLM Judge for simple queries), skip the provider call */
+  prefetchedResponse?: string;
 }
 
 export interface RouterStrategy {

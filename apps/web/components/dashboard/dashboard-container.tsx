@@ -6,6 +6,9 @@ import { StatsCards } from "./stats-cards";
 import { EvalCards } from "./eval-cards";
 import { QueryLog } from "./query-log";
 import { Button } from "@llm-router/ui";
+import { ThemeToggle } from "../theme-toggle";
+import Link from "next/link";
+import { useAppReady } from "@/lib/use-app-ready";
 
 const RoutingChart = dynamic(() => import("./routing-chart").then((m) => m.RoutingChart), { ssr: false });
 const LatencyChart = dynamic(() => import("./latency-chart").then((m) => m.LatencyChart), { ssr: false });
@@ -91,6 +94,7 @@ interface FeedbackData {
 }
 
 export function DashboardContainer() {
+  useAppReady();
   const [range, setRange] = useState<TimeRange>("7d");
   const [data, setData] = useState<DashboardData | null>(null);
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
@@ -140,6 +144,7 @@ export function DashboardContainer() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <div className="flex rounded-lg border overflow-hidden">
             {ranges.map((r) => (
               <button
@@ -158,11 +163,11 @@ export function DashboardContainer() {
           <Button variant="outline" size="sm" onClick={fetchData}>
             Refresh
           </Button>
-          <a href="/">
+          <Link href="/">
             <Button variant="ghost" size="sm">
               Chat
             </Button>
-          </a>
+          </Link>
         </div>
       </div>
 

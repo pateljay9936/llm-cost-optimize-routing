@@ -9,12 +9,14 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "better-sqlite3": "^11.7.0",
-    "drizzle-orm": "^0.38.0"
+    "better-sqlite3": "^12.6.2",
+    "drizzle-orm": "^0.38.4",
+    "sql.js": "^1.14.1"
   },
   "devDependencies": {
     "@llm-router/tsconfig": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
+    "@types/sql.js": "^1.4.9",
     "typescript": "^5.7.0"
   }
 }

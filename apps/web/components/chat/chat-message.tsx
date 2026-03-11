@@ -21,6 +21,7 @@ interface ChatMessageProps {
     latencyMs?: number;
     tokensIn?: number;
     tokensOut?: number;
+    ttftMs?: number;
     queryId?: number;
   };
 }
@@ -60,8 +61,11 @@ export function ChatMessage({ role, content, meta, isStreaming, guardrailWarning
             {meta.cost !== undefined && (
               <span>${meta.cost.toFixed(6)}</span>
             )}
+            {meta.ttftMs !== undefined && (
+              <span>TTFT {meta.ttftMs}ms</span>
+            )}
             {meta.latencyMs !== undefined && (
-              <span>{meta.latencyMs}ms</span>
+              <span>Total {meta.latencyMs}ms</span>
             )}
           </div>
         )}

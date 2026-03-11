@@ -45,6 +45,19 @@ export class Router {
     options?: CompletionOptions
   ): Promise<RouteResult> {
     const decision = await this.classify(query);
+
+    // If the strategy already produced a response (e.g. LLM Judge classified as simple
+    // and answered in the same call), return it directly — no second provider call needed.
+    if (decision.prefetchedResponse) {
+      const text = decision.prefetchedResponse;
+      async function* prefetchedStream(): AsyncIterable<StreamChunk> {
+        yield { type: "text", text };
+        yield { type: "usage", tokensIn: 0, tokensOut: 0 };
+        yield { type: "done" };
+      }
+      return { decision, stream: prefetchedStream() };
+    }
+
     const provider = this.getProvider(decision.tier);
     const messages = this.buildMessages(query);
 

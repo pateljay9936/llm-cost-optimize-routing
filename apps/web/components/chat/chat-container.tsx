@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { StrategyToggle } from "./strategy-toggle";
+import { ThemeToggle } from "../theme-toggle";
+import { useAppReady } from "@/lib/use-app-ready";
 import type { ModelTier, ChatMessage as ChatMessageType } from "@llm-router/core";
 
 interface GuardrailWarningData {
@@ -24,6 +27,7 @@ interface Message {
     tokensIn?: number;
     tokensOut?: number;
     queryId?: number;
+    ttftMs?: number;
     guardrailWarnings?: GuardrailWarningData[];
   };
 }
@@ -33,6 +37,30 @@ export function ChatContainer() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [strategy, setStrategy] = useState("heuristic");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasRestoredRef = useRef(false);
+
+  useAppReady();
+
+  // Restore messages from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("chat-messages");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch {}
+    hasRestoredRef.current = true;
+  }, []);
+
+  // Persist messages to sessionStorage (only after initial restore)
+  useEffect(() => {
+    if (hasRestoredRef.current && !isStreaming) {
+      sessionStorage.setItem("chat-messages", JSON.stringify(messages));
+    }
+  }, [messages, isStreaming]);
 
   // Load initial strategy
   useEffect(() => {
@@ -62,6 +90,13 @@ export function ChatContainer() {
 
   const handleSend = useCallback(
     async (content: string) => {
+      // Handle /clear command
+      if (content.trim().toLowerCase() === "/clear") {
+        setMessages([]);
+        sessionStorage.removeItem("chat-messages");
+        return;
+      }
+
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: "user",
@@ -168,6 +203,7 @@ export function ChatContainer() {
                         ...m.meta,
                         cost: data.meta.cost,
                         latencyMs: data.meta.latencyMs,
+                        ttftMs: data.meta.ttftMs,
                         tokensIn: data.meta.tokensIn,
                         tokensOut: data.meta.tokensOut,
                         queryId: data.meta.queryId,
@@ -236,12 +272,13 @@ export function ChatContainer() {
             strategy={strategy}
             onStrategyChange={handleStrategyChange}
           />
-          <a
+          <Link
             href="/dashboard"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Dashboard
-          </a>
+          </Link>
+          <ThemeToggle />
         </div>
       </div>
 
@@ -267,6 +304,9 @@ export function ChatContainer() {
                   Complex → GPT-4o
                 </span>
               </div>
+              <p className="text-xs text-muted-foreground/50 mt-4">
+                Type <code className="bg-secondary px-1.5 py-0.5 rounded">/clear</code> to clear chat history
+              </p>
             </div>
           </div>
         )}

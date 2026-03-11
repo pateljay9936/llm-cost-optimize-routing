@@ -1,4 +1,4 @@
-export { getDb } from "./client";
+export { getDb, resetDb } from "./client";
 export { queries, dailyStats } from "./schema";
 export { feedback } from "./feedback-schema";
 export {

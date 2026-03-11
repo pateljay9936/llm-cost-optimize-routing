@@ -19,6 +19,7 @@ export function StrategyToggle({ strategy, onStrategyChange }: StrategyTogglePro
           <SelectItem value="heuristic">Heuristic</SelectItem>
           <SelectItem value="semantic">Semantic</SelectItem>
           <SelectItem value="routellm">RouteLLM</SelectItem>
+          <SelectItem value="llm-judge">LLM Judge</SelectItem>
         </SelectContent>
       </Select>
     </div>

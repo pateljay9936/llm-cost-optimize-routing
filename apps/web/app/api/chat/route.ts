@@ -77,8 +77,13 @@ export async function POST(request: NextRequest) {
             )
           );
 
+          let firstTokenTime: number | null = null;
+
           for await (const chunk of stream) {
             if (chunk.type === "text" && chunk.text) {
+              if (firstTokenTime === null) {
+                firstTokenTime = Date.now() - startTime;
+              }
               fullResponse += chunk.text;
               controller.enqueue(
                 encoder.encode(
@@ -156,6 +161,7 @@ export async function POST(request: NextRequest) {
                   tokensOut,
                   cost,
                   latencyMs: totalLatency,
+                  ttftMs: firstTokenTime ?? totalLatency,
                   routingLatencyMs: latencyToRoute,
                   queryId,
                 },

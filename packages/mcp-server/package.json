@@ -15,8 +15,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "@llm-router/core": "workspace:*",
-    "@llm-router/db": "workspace:*",
     "zod": "^3.23.0"
   },
   "devDependencies": {
